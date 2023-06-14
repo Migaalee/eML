@@ -1,1 +1,22 @@
+Took reads from Nelson:
+NMB7S165_1.NMB7S165.trim.fastq and NMB7S165_2.NMB7S165.trim.fastq
+Those reads are from HMI1709 (w03M) that is very closely related to wMel reference
+
+## Make error model based on 150bp reads from w03M simulate reads WT and MUT reads:
+
+- First sort longer reads (150)
+awk 'BEGIN {FS = "\t" ; OFS = "\n"} {header = $0 ; getline seq ; getline qheader ; getline qseq ; if (length(seq) >= 150 && length(seq) <= 151) {print header, seq, qheader, qseq}}' < NMB7S165_1.NMB7S165.trim.fastq > filtered_w03M_150_R2.fastq
+
+awk 'BEGIN {FS = "\t" ; OFS = "\n"} {header = $0 ; getline seq ; getline qheader ; getline qseq ; if (length(seq) >= 150 && length(seq) <= 151) {print header, seq, qheader, qseq}}' < NMB7S165_2.NMB7S165.trim.fastq  >  filtered_w03M_150_R1.fastq
+
+- Pair reads 
+seqkit pair -1 filtered_w03M_150_R1.fastq -2 filtered_w03M_150_R2.fastq
+
+- Align fastq sequences to the genome
+
+bowtie2 -x genomes/wMel_AE017196_ref -1 input_sequences/filtered_w03M_150_R1.paired.fastq -2 input_sequences/filtered_w03M_150_R2.paired.fastq | samtools view -bS | samtools sort -o wMel_AE017196_w03M150.bam
+ samtools index wMel_AE017196_w03M150.bam
+
+- Make a model:
+docker run -v /c/Users/mmiskinyte/Documents/Genomics/ground_truth:/mnt/data -it --rm hadrieng/insilicoseq iss model -b /mnt/data/wMel_AE017196_w03M150.bam -o /mnt/data/error_models/wMel_AE017196_w03M_150
 
